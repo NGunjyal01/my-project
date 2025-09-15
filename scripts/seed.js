@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-require("dotenv").config();
-const Tenant = require("@/models/tenant").default;
-const User = require("@/models/user").default;
-const Note = require("@/models/note").default;
+require('dotenv').config({ path: '.env.local' });
+const Tenant = require("../models/tenant").default;
+const User = require("../models/user").default;
+const Note = require("../models/note").default;
 
 async function main() {
     const MONGODB_URI = process.env.MONGODB_URI;

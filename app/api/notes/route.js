@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Note from "@/models/note";
+import Tenant from "@/models/tenant";
 import { getUserFromReq } from "@/lib/auth";
 import { cors } from "@/lib/cors";
 
@@ -30,7 +31,7 @@ export async function GET(req) {
     );
     }
 
-    // ✅ POST /api/notes → create note
+// ✅ POST /api/notes → create note
 export async function POST(req) {
     await dbConnect();
     const authUser = await getUserFromReq(req);
@@ -43,6 +44,17 @@ export async function POST(req) {
         return cors(NextResponse.json({ error: "Title required" }, { status: 400 }));
     }
 
+    // Get current notes count for tenant
+    const currentNotesCount = await Note.countDocuments({ tenantId: authUser.tenantId });
+
+    // Check plan limits
+    const tenant = await Tenant.findById(authUser.tenantId); // Assuming you have Tenant model
+    const planLimit = tenant.plan === "pro" ? Infinity : 3;
+
+    if (currentNotesCount >= planLimit) {
+        return cors(NextResponse.json({ error: "Free plan limit reached" }, { status: 403 }));
+    }
+
     const note = await Note.create({
         title,
         content: content || "",
@@ -52,17 +64,18 @@ export async function POST(req) {
 
     return cors(
         NextResponse.json(
-        {
-            id: note._id,
-            title: note.title,
-            content: note.content,
-            createdBy: note.createdBy,
-            createdAt: note.createdAt,
-        },
-        { status: 201 }
+            {
+                id: note._id,
+                title: note.title,
+                content: note.content,
+                createdBy: note.createdBy,
+                createdAt: note.createdAt,
+            },
+            { status: 201 }
         )
     );
 }
+
 
 // Handle preflight
 export async function OPTIONS() {

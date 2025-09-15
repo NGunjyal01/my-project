@@ -4,7 +4,7 @@ import Tenant from "@/models/tenant";
 import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { cors } from "@/lib/auth"; // using your cors helper
+import { cors } from "@/lib/cors"; // using your cors helper
 
 // Handle CORS preflight
 export async function OPTIONS() {
@@ -24,7 +24,7 @@ export async function POST(request) {
     if (!user) {
         return cors(NextResponse.json({ error: "Invalid credentials" }, { status: 401 }));
     }
-
+    
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
         return cors(NextResponse.json({ error: "Invalid credentials" }, { status: 401 }));

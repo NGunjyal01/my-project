@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/user";
 import Tenant from "@/models/tenant";
-import { signToken, cors } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
+import { cors } from "@/lib/cors";
 
 // Handle CORS preflight
 export async function OPTIONS() {
