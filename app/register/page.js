@@ -14,14 +14,13 @@ import {
 } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+export default function RegisterPage() {
+  const [form, setForm] = useState({ email: "", password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,21 +31,24 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
+    if (form.password !== form.confirmPassword) {
+      setMessage("❌ Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
 
       const data = await res.json();
-      const token = data.token
-      localStorage.setItem("token", token);
-      if (!res.ok) throw new Error(data.error || "Login failed");
+      if (!res.ok) throw new Error(data.error || "Registration failed");
 
-      setMessage("✅ Login successful!");
-      router.push("/dashboard")
-      // store token in localStorage or cookies if API returns one
+      setMessage("✅ Registered successfully! You can now login.");
+      setForm({ email: "", password: "", confirmPassword: "" });
     } catch (err) {
       setMessage("❌ " + err.message);
     } finally {
@@ -55,12 +57,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex mt-[10%] items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle>Create an account</CardTitle>
           <CardDescription>
-            Enter your email and password to access your account
+            Enter your email and password to create your account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -98,6 +100,26 @@ export default function LoginPage() {
               </button>
             </div>
 
+            <div className="relative">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirm ? "text" : "password"}
+                placeholder="••••••••"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
             {message && (
               <p
                 className={`text-sm ${
@@ -109,14 +131,14 @@ export default function LoginPage() {
             )}
           </CardContent>
           <CardFooter>
-            <div className="w-full gap-4 flex flex-col mt-4">
+            <div className="mt-5 flex flex-col gap-5 w-full">
                 <Button type="submit" className="cursor-pointer" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
+                {loading ? "Registering..." : "Register"}
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
-                    New user?{" "}
-                    <Link href="/register" className="text-primary hover:underline">
-                    Create an account
+                    Already have an account?{" "}
+                    <Link href="/" className="text-primary hover:underline">
+                        Login
                     </Link>
                 </p>
             </div>
