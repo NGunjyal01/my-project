@@ -3,22 +3,32 @@ import User from "@/models/user";
 import Tenant from "@/models/tenant";
 import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/auth";
-import { setCorsHeaders } from "@/lib/cors";
+import { NextResponse } from "next/server";
+import { cors } from "@/lib/auth"; // using your cors helper
 
-export default async function handler(req, res) {
-    setCorsHeaders(res);
-    if (req.method === "OPTIONS") return res.status(200).end();
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+// Handle CORS preflight
+export async function OPTIONS() {
+    return cors(NextResponse.json({}, { status: 200 }));
+}
 
+// Handle POST /api/auth/login
+export async function POST(request) {
     await dbConnect();
-    const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ error: "email and password required" });
+
+    const { email, password } = await request.json();
+    if (!email || !password) {
+        return cors(NextResponse.json({ error: "Email and password required" }, { status: 400 }));
+    }
 
     const user = await User.findOne({ email }).lean();
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    if (!user) {
+        return cors(NextResponse.json({ error: "Invalid credentials" }, { status: 401 }));
+    }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+    if (!ok) {
+        return cors(NextResponse.json({ error: "Invalid credentials" }, { status: 401 }));
+    }
 
     const tenant = await Tenant.findById(user.tenantId).lean();
 
@@ -26,11 +36,20 @@ export default async function handler(req, res) {
         userId: String(user._id),
         tenantId: String(user.tenantId),
         role: user.role,
-        email: user.email
+        email: user.email,
     });
 
-    return res.status(200).json({
-        token,
-        user: { email: user.email, role: user.role, tenant: tenant ? tenant.slug : null }
-    });
+    return cors(
+        NextResponse.json(
+            {
+            token,
+            user: {
+                email: user.email,
+                role: user.role,
+                tenant: tenant ? tenant.slug : null,
+            },
+            },
+            { status: 200 }
+        )
+    );
 }
